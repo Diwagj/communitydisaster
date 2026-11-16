@@ -9,11 +9,10 @@ function db(): PDO
     }
 
     $host = '127.0.0.1';
-    $port = '3306';
-    $database = 'surong_gulisad_drrm';
+    $database = 'guisad_surong_drrm';
     $username = 'root';
     $password = '';
-
+    $port = 3309;
     $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
     $pdo = new PDO($dsn, $username, $password, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
