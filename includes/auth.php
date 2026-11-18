@@ -1,141 +1,126 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/../config/database.php';
 
+/*
+|--------------------------------------------------------------------------
+| Session setup
+|--------------------------------------------------------------------------
+*/
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+
     session_set_cookie_params([
-        'lifetime' => 0, 'path' => '/', 'secure' => $https,
-        'httponly' => true, 'samesite' => 'Lax'
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
     ]);
+
     session_start();
 }
 
+/*
+|--------------------------------------------------------------------------
+| General helper functions
+|--------------------------------------------------------------------------
+*/
+
 function h(?string $value): string
 {
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return htmlspecialchars(
+        (string) $value,
+        ENT_QUOTES | ENT_SUBSTITUTE,
+        'UTF-8'
+    );
 }
-function go(string $url): never
+
+function redirect(string $location): never
 {
-    header('Location: ' . $url);
+    header('Location: ' . $location);
     exit;
 }
-function signedIn(): bool
+
+function isLoggedIn(): bool
 {
     return isset($_SESSION['staff']) && is_array($_SESSION['staff']);
 }
-function staff(): ?array
+
+function currentStaff(): ?array
 {
-    return signedIn() ? $_SESSION['staff'] : null;
+    return isLoggedIn() ? $_SESSION['staff'] : null;
 }
-function requireStaff(): void
+
+/*
+|--------------------------------------------------------------------------
+| Authentication and authorization
+|--------------------------------------------------------------------------
+*/
+
+function requireLogin(): void
 {
-    if (!signedIn()) {
-        go('login.php');
+    if (!isLoggedIn()) {
+        redirect('login.php');
     }
 }
-function requireRoles(array $allowed): void
+
+function requireRoles(array $allowedRoles): void
 {
-    requireStaff();
-    if (!in_array(staff()['role'] ?? '', $allowed, true)) {
+    requireLogin();
+
+    $currentRole = currentStaff()['role'] ?? '';
+
+    if (!in_array($currentRole, $allowedRoles, true)) {
         http_response_code(403);
-        exit('Access denied. Your account does not have permission to view this page.');
+        exit('Access denied. Your account cannot access this page.');
     }
 }
-function isAdmin(): bool
+
+function isSystemAdministrator(): bool
 {
-    return signedIn() && (staff()['role'] ?? '') === 'admin';
+    return isLoggedIn()
+        && (currentStaff()['role'] ?? '') === 'admin';
 }
-function csrf(): string
+
+function roleName(string $role): string
 {
-    if (empty($_SESSION['csrf'])) {
-        $_SESSION['csrf'] = bin2hex(random_bytes(32));
-    }
-    return $_SESSION['csrf'];
-}
-function checkCsrf(): void
-{
-    $token = $_POST['csrf'] ?? '';
-    if (!is_string($token) || !hash_equals(csrf(), $token)) {
-        http_response_code(400);
-        exit('Invalid form submission. Return to the page, refresh it, and try again.');
-    }
-}
-function flash(string $type, string $message): void
-{
-    $_SESSION['flash'] = ['type' => $type, 'message' => $message];
-}
-function takeFlash(): ?array
-{
-    $f = $_SESSION['flash'] ?? null;
-    unset($_SESSION['flash']);
-    return $f;
-}
-function roleLabel(string $role): string
-{
-    return [
+    $roleNames = [
         'admin' => 'System Administrator',
         'bdrrmc' => 'BDRRMC Coordinator',
         'official' => 'Barangay Official',
         'responder' => 'CDRRMC Agent / Responder',
-    ][$role] ?? 'Staff';
-}
-function publicHeader(string $active = ''): void
-{
-    $links = [
-        'announcements.php' => 'Announcements',
-        'evacuation-centers.php' => 'Evacuation Centers',
-        'report-incident.php' => 'Report Incident',
     ];
-    echo '<header class="top"><div class="wrap top-inner">';
-    echo '<a class="brand" href="index.php"><img src="assets/logo.png" alt="Barangay logo"><span><b>BARANGAY SURONG GUISAD</b><small>Disaster Response Portal</small></span></a>';
-    echo '<nav class="public-nav">';
-    foreach ($links as $url => $label) {
-        echo '<a href="' . h($url) . '"' . ($active === $url ? ' class="current"' : '') . '>' . h($label) . '</a>';
+
+    return $roleNames[$role] ?? 'Staff';
+}
+
+/*
+|--------------------------------------------------------------------------
+| CSRF protection for forms
+|--------------------------------------------------------------------------
+*/
+
+function csrfToken(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
-    echo '</nav></div></header>';
+
+    return $_SESSION['csrf_token'];
 }
-function staffHeader(string $pageTitle): void
+
+function verifyCsrfToken(): void
 {
-    $s = staff();
-    echo '<header class="top"><div class="wrap top-inner">';
-    echo '<a class="brand" href="dashboard.php"><img src="assets/logo.png" alt="Barangay logo"><span><b>SURONG GUISAD DRRM</b><small>Staff Management Portal</small></span></a>';
-    echo '<div class="staff-id"><span>' . h($s['full_name'] ?? '') . ' · ' . h(roleLabel($s['role'] ?? '')) . '</span><a class="button button-light" href="logout.php">Sign out</a></div>';
-    echo '</div></header>';
-}
-function staffNav(): void
-{
-    $role = staff()['role'] ?? '';
-    $items = [
-        ['dashboard.php','Dashboard',['admin','bdrrmc','official','responder']],
-        ['incidents.php','Incident Reports',['admin','bdrrmc','official','responder']],
-        ['response.php','Emergency Response',['admin','bdrrmc','responder']],
-        ['evacuation.php','Evacuation Management',['admin','bdrrmc','official','responder']],
-        ['households.php','Household Registry',['admin']],
-        ['inventory.php','Relief Inventory',['admin','bdrrmc']],
-        ['distribution.php','Relief Distribution',['admin','bdrrmc','official']],
-        ['manage-announcements.php','Announcements',['admin','bdrrmc','official']],
-        ['reports.php','Disaster Reports',['admin','bdrrmc','official']],
-        ['users.php','User Accounts',['admin']],
-    ];
-    echo '<aside class="side"><div class="side-title">SYSTEM MODULES</div>';
-    foreach ($items as [$url,$label,$roles]) {
-        if (in_array($role, $roles, true)) {
-            echo '<a href="' . h($url) . '">' . h($label) . '</a>';
-        } else {
-            echo '<span class="disabled" title="Your account does not have access">' . h($label) . ' <small>🔒</small></span>';
-        }
+    $submittedToken = $_POST['csrf_token'] ?? '';
+
+    if (
+        !is_string($submittedToken)
+        || !hash_equals(csrfToken(), $submittedToken)
+    ) {
+        http_response_code(400);
+        exit('Invalid form submission. Refresh the page and try again.');
     }
-    echo '<div class="side-note">Greyed-out modules are unavailable for your role. Access is also checked by PHP on every page.</div></aside>';
-}
-function pageStart(string $title): void
-{
-    staffHeader($title);
-    echo '<div class="wrap staff-layout">';
-    staffNav();
-    echo '<main class="content"><div class="crumb">Staff Portal / ' . h($title) . '</div><h1>' . h($title) . '</h1>';
-}
-function pageEnd(): void
-{
-    echo '</main></div><footer class="footer"><div class="wrap">Barangay Surong Guisad · Community Disaster Risk Reduction and Emergency Response Management System</div></footer>';
 }
