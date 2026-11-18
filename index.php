@@ -1,12 +1,134 @@
-<?php require_once __DIR__ . '/includes/auth.php'; ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Barangay Surong Guisad | DRRM Portal</title><link rel="stylesheet" href="assets/style.css"></head><body>
-<?php publicHeader(); ?>
-<main>
-<section class="hero"><div class="wrap hero-grid"><div><div class="eyebrow">Barangay Surong Guisad · Community Portal</div><h1>Prepared communities. Coordinated response. Safer lives.</h1><p>Access public disaster information, read official advisories, locate evacuation centers, and report an emergency incident to the barangay response team.</p><div class="actions"><a class="button" href="report-incident.php">Report an incident</a><a class="button button-outline" href="announcements.php">View announcements</a></div></div><div class="hero-panel"><h2>Community information hub</h2><p>This public portal is available to everyone. No account is required to view advisories or submit an incident report.</p><div class="quick-grid"><div class="quick"><b>Incident reporting</b><small>Send an incident report to the barangay</small></div><div class="quick"><b>Evacuation centers</b><small>View public center information</small></div><div class="quick"><b>Announcements</b><small>Read official advisories</small></div><div class="quick"><b>Staff portal</b><small>Restricted access for authorized personnel</small></div></div></div></div></section>
-<section class="section"><div class="wrap"><div class="section-head"><div><div class="kicker">Public services</div><h2>How can we help?</h2></div><p>Household registry, resident details, inventory records, and internal reports are confidential and are not available through this public website.</p></div><div class="cards">
-<a class="card" href="announcements.php"><div class="card-icon">◉</div><h3>Announcements & Advisories</h3><p>Read emergency notices, preparedness reminders, and evacuation instructions.</p></a>
-<a class="card" href="report-incident.php"><div class="card-icon">⌖</div><h3>Report an Incident</h3><p>Submit information about a flood, fire, landslide, road obstruction, or other incident.</p></a>
-<a class="card" href="evacuation-centers.php"><div class="card-icon">⌂</div><h3>Evacuation Centers</h3><p>View the location, contact information, and public status of evacuation centers.</p></a>
-</div></div></section>
-<section class="section" style="padding-top:0"><div class="wrap"><div class="info-banner"><strong>For emergencies:</strong> If there is immediate danger, contact the appropriate local emergency service directly. Submitting this online form should not be treated as a substitute for an emergency call.</div></div></section>
-</main><footer class="footer"><div class="wrap">Barangay Surong Guisad · Community Disaster Risk Reduction and Emergency Response Management System <span style="float:right"><a href="login.php">Staff Login</a></span></div></footer></body></html>
+<?php
+require_once __DIR__ . '/includes/auth.php';
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Barangay Surong Guisad | DRRM Portal</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <?php require __DIR__ . '/includes/public-header.php'; ?>
+
+    <main>
+        <section class="hero">
+            <div class="wrap hero-grid">
+                <div>
+                    <div class="eyebrow">
+                        Barangay Surong Guisad · Community Portal
+                    </div>
+
+                    <h1>Prepared communities. Coordinated response. Safer lives.</h1>
+
+                    <p>
+                        Access public disaster information, read official
+                        advisories, locate evacuation centers, and report an
+                        emergency incident to the barangay response team.
+                    </p>
+
+                    <div class="actions">
+                        <a class="button" href="report-incident.php">
+                            Report an incident
+                        </a>
+
+                        <a class="button button-outline" href="announcements.php">
+                            View announcements
+                        </a>
+                    </div>
+                </div>
+
+                <div class="hero-panel">
+                    <h2>Community information hub</h2>
+                    <p>
+                        This public portal is available to everyone. No account
+                        is required to view advisories or submit an incident report.
+                    </p>
+
+                    <div class="quick-grid">
+                        <div class="quick">
+                            <b>Incident reporting</b>
+                            <small>Send an incident report to the barangay</small>
+                        </div>
+
+                        <div class="quick">
+                            <b>Evacuation centers</b>
+                            <small>View public center information</small>
+                        </div>
+
+                        <div class="quick">
+                            <b>Announcements</b>
+                            <small>Read official advisories</small>
+                        </div>
+
+                        <div class="quick">
+                            <b>Staff portal</b>
+                            <small>Restricted access for authorized personnel</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="wrap">
+                <div class="section-head">
+                    <div>
+                        <div class="kicker">Public services</div>
+                        <h2>How can we help?</h2>
+                    </div>
+
+                    <p>
+                        Household registry, resident details, inventory records,
+                        and internal reports are confidential and are not
+                        available through this public website.
+                    </p>
+                </div>
+
+                <div class="cards">
+                    <a class="card" href="announcements.php">
+                        <div class="card-icon">◉</div>
+                        <h3>Announcements & Advisories</h3>
+                        <p>
+                            Read emergency notices, preparedness reminders,
+                            and evacuation instructions.
+                        </p>
+                    </a>
+
+                    <a class="card" href="report-incident.php">
+                        <div class="card-icon">⌖</div>
+                        <h3>Report an Incident</h3>
+                        <p>
+                            Submit information about a flood, fire, landslide,
+                            road obstruction, or other incident.
+                        </p>
+                    </a>
+
+                    <a class="card" href="evacuation-centers.php">
+                        <div class="card-icon">⌂</div>
+                        <h3>Evacuation Centers</h3>
+                        <p>
+                            View the location, contact information, and public
+                            status of evacuation centers.
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" style="padding-top: 0;">
+            <div class="wrap">
+                <div class="info-banner">
+                    <strong>For emergencies:</strong>
+                    If there is immediate danger, contact the appropriate local
+                    emergency service directly. Submitting this online form
+                    should not be treated as a substitute for an emergency call.
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <?php require __DIR__ . '/includes/public-footer.php'; ?>
+</body>
+</html>
