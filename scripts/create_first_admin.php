@@ -1,53 +1,86 @@
 <?php
 declare(strict_types=1);
 
-// Run once from Command Prompt/PowerShell: php scripts/create_first_admin.php
-// This script refuses to run if any user already exists.
 require_once __DIR__ . '/../config/database.php';
 
+// This script must only be run from PowerShell or Command Prompt.
 if (PHP_SAPI !== 'cli') {
-    http_response_code(403);
-    exit("CLI only.
-");
+    fwrite(STDERR, "This script can only run through the command line.\n");
+    exit(1);
+}
+
+/**
+ * Reads one line from the command-line terminal.
+ */
+function prompt(string $message): string
+{
+    echo $message;
+
+    return trim((string) fgets(STDIN));
 }
 
 try {
-    $pdo = getPDO();
-    $count = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
-    if ($count > 0) {
-        exit("Setup stopped: a user account already exists. Use the admin page to create additional accounts.
-");
+    // Connect using the single shared db() helper.
+    $connection = db();
+
+    // Stop if an administrator already exists.
+    $checkAdmin = $connection->prepare(
+        "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+    );
+    $checkAdmin->execute();
+
+    if ((int) $checkAdmin->fetchColumn() > 0) {
+        exit("An administrator account already exists. No account was created.\n");
     }
 
-    $roleStmt = $pdo->prepare("SELECT role_id FROM roles WHERE role_name = 'System Administrator' LIMIT 1");
-    $roleStmt->execute();
-    $roleId = $roleStmt->fetchColumn();
-    if (!$roleId) exit("System Administrator role not found. Import the project SQL file first.
-");
+    echo "Create the first System Administrator account.\n";
+    echo "Note: Password input will be visible while typing in this terminal.\n\n";
 
-    $first = trim((string)readline('First name: '));
-    $last = trim((string)readline('Last name: '));
-    $username = trim((string)readline('Username (4-80 characters): '));
-    $email = trim((string)readline('Email (optional): '));
-    $password = (string)readline('Password (minimum 8 characters): ');
+    // Collect administrator information.
+    $fullName = prompt("Full name: ");
+    $username = prompt("Username (4-50 characters): ");
+    $password = prompt("Password (minimum 8 characters): ");
 
-    if ($first === '' || $last === '' || !preg_match('/^[A-Za-z0-9._-]{4,80}$/', $username) || strlen($password) < 8 || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
-        exit("Invalid input. No account was created. Run the script again and enter valid details.
-");
+    // Validate the submitted information.
+    $validName = $fullName !== '' && strlen($fullName) <= 100;
+    $validUsername = preg_match('/^[A-Za-z0-9._-]{4,50}$/', $username) === 1;
+    $validPassword = strlen($password) >= 8;
+
+    if (!$validName || !$validUsername || !$validPassword) {
+        exit("Invalid information. No administrator account was created.\n");
     }
 
-    $pdo->beginTransaction();
-    $insert = $pdo->prepare("INSERT INTO users (username,email,password_hash,first_name,last_name,account_status) VALUES (?,?,?,?,?,'active')");
-    $insert->execute([$username, $email !== '' ? $email : null, password_hash($password, PASSWORD_DEFAULT), $first, $last]);
-    $userId = (int)$pdo->lastInsertId();
-    $assign = $pdo->prepare('INSERT INTO user_roles (user_id,role_id,assigned_by) VALUES (?,?,NULL)');
-    $assign->execute([$userId, (int)$roleId]);
-    $pdo->commit();
-    echo "First System Administrator created successfully. Sign in through /login.php.
-";
+    // Make sure the username is not already used.
+    $checkUsername = $connection->prepare(
+        'SELECT COUNT(*) FROM users WHERE username = :username'
+    );
+    $checkUsername->execute(['username' => $username]);
+
+    if ((int) $checkUsername->fetchColumn() > 0) {
+        exit("That username is already taken. Run the script again with another username.\n");
+    }
+
+    // Store a password hash, never the plain-text password.
+    $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+
+    // Insert the administrator account using the existing users table structure.
+    $insertAdmin = $connection->prepare(
+        "INSERT INTO users
+            (full_name, username, password_hash, role, is_active)
+         VALUES
+            (:full_name, :username, :password_hash, 'admin', 1)"
+    );
+
+    $insertAdmin->execute([
+        'full_name' => $fullName,
+        'username' => $username,
+        'password_hash' => $passwordHash,
+    ]);
+
+    echo "\nAdministrator account created successfully.\n";
+    echo "You can now sign in through login.php.\n";
+
 } catch (Throwable $exception) {
-    if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) $pdo->rollBack();
-    fwrite(STDERR, "Setup failed: " . $exception->getMessage() . "
-");
+    fwrite(STDERR, "Setup failed: " . $exception->getMessage() . "\n");
     exit(1);
 }
