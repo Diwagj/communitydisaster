@@ -1,9 +1,24 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+
+// Remove the session data.
 $_SESSION = [];
+
+// Expire the session cookie in the browser.
 if (ini_get('session.use_cookies')) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time()-42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    $cookieParameters = session_get_cookie_params();
+
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $cookieParameters['path'],
+        $cookieParameters['domain'],
+        $cookieParameters['secure'],
+        $cookieParameters['httponly']
+    );
 }
+
 session_destroy();
-go('index.php');
+
+redirect('index.php');
