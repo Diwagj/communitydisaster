@@ -28,9 +28,7 @@ require __DIR__ . '/includes/staff-layout-start.php';
     </p>
 
     <p>
-        <a class="button" href="admin-create-user.php">
-            + Create staff account
-        </a>
+        <a class="button" href="admin-create-user.php">+ Create staff account</a> <a class="button" href="permissions.php">Manage user permissions</a>
     </p>
 
     <?php if (empty($users)): ?>
@@ -46,6 +44,7 @@ require __DIR__ . '/includes/staff-layout-start.php';
                         <th>Contact</th>
                         <th>Status</th>
                         <th>Created</th>
+                        <th>Permissions</th>
                     </tr>
                 </thead>
 
@@ -60,6 +59,7 @@ require __DIR__ . '/includes/staff-layout-start.php';
                                 <?= (int) $user['is_active'] === 1 ? 'Active' : 'Inactive' ?>
                             </td>
                             <td><?= h($user['created_at']) ?></td>
+                            <td><a href="permissions.php?user_id=<?= (int)$user['user_id'] ?>">Configure access</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
