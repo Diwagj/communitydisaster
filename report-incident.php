@@ -3,6 +3,8 @@ require_once __DIR__ . '/includes/auth.php';
 
 $errors = [];
 $successMessage = '';
+$uploadedImagePath = null;
+$uploadedAbsolutePath = null;
 
 $formData = [
     'reporter_name' => '',
@@ -50,8 +52,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Provide the incident location (maximum 255 characters).';
     }
 
+    // Optional evidence image: verified JPEG, PNG or WebP only, maximum 5 MB.
+    if (isset($_FILES['incident_image']) && $_FILES['incident_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['incident_image']['error'] !== UPLOAD_ERR_OK || $_FILES['incident_image']['size'] > 5 * 1024 * 1024) {
+            $errors[] = 'The image must be 5 MB or smaller and upload successfully.';
+        } else {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($_FILES['incident_image']['tmp_name']);
+            $allowedImages = ['image/jpeg'=>'jpg', 'image/png'=>'png', 'image/webp'=>'webp'];
+            if (!isset($allowedImages[$mime])) $errors[] = 'Upload a JPEG, PNG, or WebP image only.';
+        }
+    }
+
     if (empty($errors)) {
         try {
+            if (isset($_FILES['incident_image']) && $_FILES['incident_image']['error'] === UPLOAD_ERR_OK) {
+                $uploadDirectory = __DIR__ . '/storage/incident_uploads';
+                if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0750, true) && !is_dir($uploadDirectory)) {
+                    throw new RuntimeException('Upload directory could not be created.');
+                }
+                $fileName = bin2hex(random_bytes(16)) . '.' . $allowedImages[$mime];
+                $uploadedAbsolutePath = $uploadDirectory . '/' . $fileName;
+                if (!move_uploaded_file($_FILES['incident_image']['tmp_name'], $uploadedAbsolutePath)) {
+                    throw new RuntimeException('Image could not be saved.');
+                }
+                $uploadedImagePath = 'storage/incident_uploads/' . $fileName;
+            }
             $insertIncident = db()->prepare(
                 "INSERT INTO incidents
                     (
@@ -61,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         incident_type,
                         description,
                         location,
+                        image_path,
                         status
                     )
                  VALUES
@@ -71,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         :incident_type,
                         :description,
                         :location,
+                        :image_path,
                         'reported'
                     )"
             );
@@ -83,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'incident_type' => $formData['incident_type'],
                 'description' => $formData['description'],
                 'location' => $formData['location'],
+                'image_path' => $uploadedImagePath,
             ]);
 
             $successMessage = 'Your incident report has been submitted. The barangay team will review the information.';
@@ -94,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'description' => '',
                 'location' => '',
             ];
-        } catch (PDOException $exception) {
+        } catch (Throwable $exception) {
+            if ($uploadedAbsolutePath !== null && is_file($uploadedAbsolutePath)) unlink($uploadedAbsolutePath);
             error_log($exception->getMessage());
             $errors[] = 'The report could not be submitted. Please try again later or contact the barangay directly.';
         }
@@ -137,7 +167,7 @@ require __DIR__ . '/includes/public-page-start.php';
         </div>
     <?php endif; ?>
 
-    <form method="post" action="report-incident.php">
+    <form method="post" action="report-incident.php" enctype="multipart/form-data">
         <input
             type="hidden"
             name="csrf_token"
@@ -201,6 +231,10 @@ require __DIR__ . '/includes/public-page-start.php';
                     name="description"
                     required
                 ><?= h($formData['description']) ?></textarea>
+            </div>
+            <div class="field full">
+                <label for="incident_image">Incident image (optional, JPEG/PNG/WebP, maximum 5 MB)</label>
+                <input id="incident_image" name="incident_image" type="file" accept="image/jpeg,image/png,image/webp">
             </div>
         </div>
 
