@@ -1,13 +1,13 @@
 <?php
-/*
- * Shared table page for the read-only staff modules.
- *
- * Each module page supplies:
- *   $pageTitle
- *   $allowedRoles
- *   $query
- *   $tableColumns
- */
+
+
+
+
+
+
+
+
+
 
 require_once __DIR__ . '/auth.php';
 

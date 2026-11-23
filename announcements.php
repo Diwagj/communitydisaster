@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+<<<<<<< HEAD
 
 $announcements = [];
 $categories = [
@@ -100,3 +101,7 @@ require __DIR__ . '/includes/public-page-start.php';
 <?php endif; ?>
 
 <?php require __DIR__ . '/includes/public-page-end.php'; ?>
+=======
+$moduleKey = 'announcements';
+require __DIR__ . '/includes/workspace.php';
+>>>>>>> f1ab5b65d1b723397224c2de5d888f1b0f732151

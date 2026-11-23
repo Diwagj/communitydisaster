@@ -1,6 +1,3 @@
--- Version 5 upgrade for the existing surong_guisad_drrm database.
--- Select the existing database in phpMyAdmin and run this ONCE.
--- Do not re-import the original database creation SQL.
 
 CREATE TABLE IF NOT EXISTS `user_permissions` (
   `permission_id` int(11) NOT NULL AUTO_INCREMENT,

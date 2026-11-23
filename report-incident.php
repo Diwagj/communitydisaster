@@ -49,8 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Provide the incident location (maximum 255 characters).';
     }
 
+<<<<<<< HEAD
     $allowedImages = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     $mime = '';
+=======
+>>>>>>> f1ab5b65d1b723397224c2de5d888f1b0f732151
 
     if (isset($_FILES['incident_image']) && $_FILES['incident_image']['error'] !== UPLOAD_ERR_NO_FILE) {
         if ($_FILES['incident_image']['error'] !== UPLOAD_ERR_OK || $_FILES['incident_image']['size'] > 5 * 1024 * 1024) {
