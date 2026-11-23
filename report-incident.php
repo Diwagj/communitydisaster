@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Provide the incident location (maximum 255 characters).';
     }
 
-    // Optional evidence image: verified JPEG, PNG or WebP only, maximum 5 MB.
+
     if (isset($_FILES['incident_image']) && $_FILES['incident_image']['error'] !== UPLOAD_ERR_NO_FILE) {
         if ($_FILES['incident_image']['error'] !== UPLOAD_ERR_OK || $_FILES['incident_image']['size'] > 5 * 1024 * 1024) {
             $errors[] = 'The image must be 5 MB or smaller and upload successfully.';
