@@ -1409,9 +1409,17 @@ require __DIR__ . '/staff-layout-start.php';
     $distStmt->execute($distParams);
     $dist = $distStmt->fetchAll();
     ?>
+    
+    <div class="print-only-header">
+        <h1 style="margin: 0; font-size: 18px;">Barangay Surong Guisad DRRM — Statistical Report</h1>
+        <p style="margin: 4px 0 0; font-size: 12px;">
+            Date Range: <?= ($dateFrom !== '' || $dateTo !== '') ? h(($dateFrom ?: 'Start') . ' to ' . ($dateTo ?: 'Present')) : 'All Records' ?>
+            · Generated on <?= h(date('Y-m-d H:i')) ?>
+        </p>
+    </div>
 
-    <section class="panel">
-        <h2>Filter Reports by Date Range</h2>
+    <section class="panel no-print">
+        <h2>Filter &amp; Selective Print / PDF Export</h2>
         <form method="get" action="reports.php">
             <div class="form-grid">
                 <div class="field">
@@ -1428,108 +1436,166 @@ require __DIR__ . '/staff-layout-start.php';
                 <a class="button button-light" href="reports.php">Reset</a>
             <?php endif; ?>
         </form>
+
+        <hr style="margin: 16px 0; border: 0; border-top: 1px solid #e2e8f0;">
+
+        <div>
+            <strong>Select sections to include in Print / PDF:</strong>
+            <div class="print-controls" id="printSectionSelectors">
+                <label><input type="checkbox" value="sec-kpi" checked> Overview KPIs</label>
+                <label><input type="checkbox" value="sec-incidents" checked> 1. Incident Status</label>
+                <label><input type="checkbox" value="sec-affected" checked> 2. Affected Households</label>
+                <label><input type="checkbox" value="sec-evacuation" checked> 3. Evacuation Occupancy</label>
+                <label><input type="checkbox" value="sec-inventory" checked> 4. Relief Inventory</label>
+                <label><input type="checkbox" value="sec-distribution" checked> 5. Relief Distribution</label>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="button" type="button" onclick="printSelectedReport()">Print / Export Selected (PDF)</button>
+                <button class="button button-light" type="button" onclick="toggleAllReportSections(true)">Select All</button>
+                <button class="button button-light" type="button" onclick="toggleAllReportSections(false)">Unselect All</button>
+            </div>
+        </div>
     </section>
 
-    <div class="module-grid" style="margin-bottom: 18px;">
+    <div class="module-grid report-section" id="sec-kpi" style="margin-bottom: 18px;">
         <div class="module-card">
             <h3>Total Incidents Recorded</h3>
             <p style="font-size: 20px; font-weight: bold; color: #17314e;"><?= $totalIncidents ?> (<?= $resolvedIncidents ?> Resolved)</p>
         </div>
         <div class="module-card">
-            <h3>Active Evacuees & Low Stock</h3>
+            <h3>Active Evacuees &amp; Low Stock</h3>
             <p style="font-size: 20px; font-weight: bold; color: #17314e;"><?= $totalEvacuees ?> Evacuees · <?= $lowStockCount ?> Low-Stock Items</p>
         </div>
     </div>
 
     <section class="panel">
-        <h2>1. Incident Status Summary</h2>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Status</th><th>Total</th></tr></thead>
-                <tbody>
-                    <?php foreach ($counts as $r): ?>
-                        <tr>
-                            <td><?= h(ucwords(str_replace('_', ' ', $r['status']))) ?></td>
-                            <td><?= (int) $r['total'] ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="report-section" id="sec-incidents">
+            <h2>1. Incident Status Summary</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Status</th><th>Total</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($counts as $r): ?>
+                            <tr>
+                                <td><?= h(ucwords(str_replace('_', ' ', $r['status']))) ?></td>
+                                <td><?= (int) $r['total'] ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <h2 style="margin-top: 20px;">2. Affected Households by Incident</h2>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Reference</th><th>Type</th><th>Status</th><th>Affected Households</th></tr></thead>
-                <tbody>
-                    <?php foreach ($affected as $r): ?>
-                        <tr>
-                            <td><?= h(formatRef('INC', (int) $r['incident_id'])) ?></td>
-                            <td><?= h(ucwords(str_replace('_', ' ', $r['incident_type']))) ?></td>
-                            <td><?= h(ucwords(str_replace('_', ' ', $r['status']))) ?></td>
-                            <td><?= (int) $r['affected_households'] ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="report-section" id="sec-affected" style="margin-top: 20px;">
+            <h2>2. Affected Households by Incident</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Reference</th><th>Type</th><th>Status</th><th>Affected Households</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($affected as $r): ?>
+                            <tr>
+                                <td><?= h(formatRef('INC', (int) $r['incident_id'])) ?></td>
+                                <td><?= h(ucwords(str_replace('_', ' ', $r['incident_type']))) ?></td>
+                                <td><?= h(ucwords(str_replace('_', ' ', $r['status']))) ?></td>
+                                <td><?= (int) $r['affected_households'] ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <h2 style="margin-top: 20px;">3. Evacuation Center Occupancy</h2>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Center</th><th>Status</th><th>Capacity</th><th>Current Occupants</th><th>Available Slots</th></tr></thead>
-                <tbody>
-                    <?php foreach ($occupancy as $r): ?>
-                        <tr>
-                            <td><?= h($r['center_name']) ?></td>
-                            <td><?= h(ucfirst($r['status'])) ?></td>
-                            <td><?= (int) $r['capacity'] ?></td>
-                            <td><?= (int) $r['occupants'] ?></td>
-                            <td><?= max(0, (int) $r['capacity'] - (int) $r['occupants']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="report-section" id="sec-evacuation" style="margin-top: 20px;">
+            <h2>3. Evacuation Center Occupancy</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Center</th><th>Status</th><th>Capacity</th><th>Current Occupants</th><th>Available Slots</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($occupancy as $r): ?>
+                            <tr>
+                                <td><?= h($r['center_name']) ?></td>
+                                <td><?= h(ucfirst($r['status'])) ?></td>
+                                <td><?= (int) $r['capacity'] ?></td>
+                                <td><?= (int) $r['occupants'] ?></td>
+                                <td><?= max(0, (int) $r['capacity'] - (int) $r['occupants']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <h2 style="margin-top: 20px;">4. Relief Inventory Balances</h2>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Item</th><th>Balance</th><th>Alert Status</th></tr></thead>
-                <tbody>
-                    <?php foreach ($stock as $r): ?>
-                        <?php $q = (int) $r['stock_qty']; ?>
-                        <tr>
-                            <td><?= h($r['item_name']) ?></td>
-                            <td><?= $q ?> <?= h($r['unit']) ?></td>
-                            <td><?= $q === 0 ? 'OUT OF STOCK' : ($q <= 10 ? 'LOW STOCK' : 'OK') ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="report-section" id="sec-inventory" style="margin-top: 20px;">
+            <h2>4. Relief Inventory Balances</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Item</th><th>Balance</th><th>Alert Status</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($stock as $r): ?>
+                            <?php $q = (int) $r['stock_qty']; ?>
+                            <tr>
+                                <td><?= h($r['item_name']) ?></td>
+                                <td><?= $q ?> <?= h($r['unit']) ?></td>
+                                <td><?= $q === 0 ? 'OUT OF STOCK' : ($q <= 10 ? 'LOW STOCK' : 'OK') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <h2 style="margin-top: 20px;">5. Relief Distribution History</h2>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Ref #</th><th>Household</th><th>Item</th><th>Quantity</th><th>Received By</th><th>Date</th></tr></thead>
-                <tbody>
-                    <?php foreach ($dist as $r): ?>
-                        <tr>
-                            <td><?= h(formatRef('DIST', (int) $r['distribution_id'])) ?></td>
-                            <td><?= h($r['household_head']) ?></td>
-                            <td><?= h($r['item_name']) ?></td>
-                            <td><?= (int) $r['quantity'] ?> <?= h($r['unit']) ?></td>
-                            <td><?= h($r['received_by']) ?></td>
-                            <td><?= h($r['distribution_date']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="report-section" id="sec-distribution" style="margin-top: 20px;">
+            <h2>5. Relief Distribution History</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Ref #</th><th>Household</th><th>Item</th><th>Quantity</th><th>Received By</th><th>Date</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($dist as $r): ?>
+                            <tr>
+                                <td><?= h(formatRef('DIST', (int) $r['distribution_id'])) ?></td>
+                                <td><?= h($r['household_head']) ?></td>
+                                <td><?= h($r['item_name']) ?></td>
+                                <td><?= (int) $r['quantity'] ?> <?= h($r['unit']) ?></td>
+                                <td><?= h($r['received_by']) ?></td>
+                                <td><?= h($r['distribution_date']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
-
-        <p class="muted" style="margin-top: 14px;">To print or export this report as PDF, press <strong>Ctrl + P</strong>.</p>
     </section>
+
+    <script>
+        function toggleAllReportSections(checked) {
+            document.querySelectorAll('#printSectionSelectors input[type="checkbox"]').forEach(function (cb) {
+                cb.checked = checked;
+            });
+        }
+
+        function printSelectedReport() {
+            const checkboxes = document.querySelectorAll('#printSectionSelectors input[type="checkbox"]');
+            let anyChecked = false;
+
+            checkboxes.forEach(function (cb) {
+                const target = document.getElementById(cb.value);
+                if (!target) return;
+                if (cb.checked) {
+                    anyChecked = true;
+                    target.classList.remove('print-hidden');
+                } else {
+                    target.classList.add('print-hidden');
+                }
+            });
+
+            if (!anyChecked) {
+                alert('Select at least one report section to print or export.');
+                return;
+            }
+
+            window.print();
+        }
+    </script>
 <?php endif; ?>
 
 <?php require __DIR__ . '/staff-layout-end.php'; ?>
